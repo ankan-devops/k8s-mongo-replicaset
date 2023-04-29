@@ -65,4 +65,3 @@ _mongodb://\<username\>:\<password\>@deploymongodb-0.mongodb-svc.\<namespace\>.s
 ## For more detailed understanding of this deployment porcess of MongoDB please refer to the medium blog:
 
 _https://medium.com/@ankan-devops/mongodb-replicaset-on-kubernetes-with-auto-failover-auto-scaling-d15901658136_
--------------------------------------------------------------------------------------

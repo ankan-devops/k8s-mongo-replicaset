@@ -27,13 +27,13 @@ The MongoDB server runs as 1 primary mongo node (k8s pod) and multiple secondary
 
 ## Changes that needs to be made:
 
-On Kustomization yaml make the following changes:
+_On Kustomization yaml make the following changes:_
 + Replace the filesystemID with that of the EFS you crreated
 + Replace the namespace of your choice
 + Add your preferred name-suffix
 + Set values for the min and max replica of the kubernetes HorizontalPodAutoscaling
 
-There are 2 secrets manifest files:
+_There are 2 secrets manifest files:_
 1. Username & password For the mongoDB users. Make changes to those values as needed.
 2. Credentials for the Mongo-express console and the credentials to connect to the MongoDB server.
    + Make sure the username and passwd added for connecting to the mongoDB server matches the creds of the users in mongodb.
@@ -56,11 +56,13 @@ https://github.com/mongo-express/mongo-express
 ## Mongo Connection String:
 
 The MongoDB connection string to connect from within the k8s cluster will be of the format:
-**mongodb://\<username\>:\<password\>@deploymongodb-0.mongodb-svc.\<namespace\>.svc.cluster.local,deploymongodb-1.mongodb-svc.\<namespace\>.svc.cluster.local,deploymongodb-2.mongodb-svc.\<namespace\>.svc.cluster.local:27017/<db_name>**
+
+_mongodb://\<username\>:\<password\>@deploymongodb-0.mongodb-svc.\<namespace\>.svc.cluster.local,deploymongodb-1.mongodb-svc.\<namespace\>.svc.cluster.local,deploymongodb-2.mongodb-svc.\<namespace\>.svc.cluster.local:27017/<db_name>_
 
 > Add ?readPreference=secondaryPreferred as query string to connect to secondary nodes for read operations.
 
 
 ### For more detailed understanding of this deployment porcess of MongoDB please refer to the medium doc I created:
+-----------------------------------------------------------------------------------------
 **https://medium.com/@ankan-devops/mongodb-replicaset-on-kubernetes-with-auto-failover-auto-scaling-d15901658136**
 -------------------------------------------------------------------------------------

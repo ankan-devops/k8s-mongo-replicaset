@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init
+  namespace: mongo
+data:
+  mongo-user.sh: |
+    #!/bin/bash
+    if [ ! -f /data/db/admin-user.lock ]; then
+    sleep 45;
+    if [ "$HOSTNAME" = "deploymongodb-0" ]; then
+      mongosh admin --eval 'rs.initiate({_id: "rs0", members: [{ _id: 0, host: "deploymongodb-0.mongodb-svc:27017" }]})';
+      sleep 3;
+      mongosh admin --eval 'db.getSiblingDB("admin").createUser({user : "'${MONGO_INITDB_ROOT_USERNAME}'",pwd  : "'${MONGO_INITDB_ROOT_PASSWORD}'", roles: [ { role : "root", db : "admin" } ]})';
+      mongosh db1 -u ${MONGO_INITDB_ROOT_USERNAME} -p ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase=admin --eval 'db.getSiblingDB("db1").createUser({user : "'${DB_USERNAME}'",pwd  : "'${DB_PASSWORD}'", roles: [ { role : "dbAdmin", db : "db1" } ]})';
+    else
+      sleep 15;
+      mongosh deploymongodb-0.mongodb-svc:27017 -u ${MONGO_INITDB_ROOT_USERNAME} -p ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase=admin --eval 'rs.add( { host: "'${HOSTNAME}'.mongodb-svc:27017" } )'; fi;
+    touch /data/db/admin-user.lock;
+    fi;
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-key
+  namespace: mongo
+
+data:
+  mongodb.key: |
+    aP+dcZjtBO3Qjvwm2oaxjhYsGrezOi6oV49+dbpON8mTiyW0Zr359EUCYcLn/QcU
+    3jPmPDnil1mdoIevcz1z/GF17gbmFVBFR9H24DMAeDzxzHhVusVp0NN6dn0mhCcO
+    vQUaG9uTxKPAthkwG1JJJQwmzwhc5cXIq51hY5Ea6IoAWmxebvqohRjWf8KjXXE6
+    ji0XguppRKEHk4LEZMoeztjAaSKFn/DF9IXuraHtR1RqViDbExQYc9Db/obUS1jN
+    80dR7GpvE5IExju3uSSOv1LkjVgWHz/02sdk8qc9p/R6Zua6D/HuCI6OFYJ2btYq
+    bIJ4rpphmI06d64XFzWexQeLpOSGBJQt+630U7GzcQHM9ARUYybrSoQ39i3w1Wci
+    lMZq96AGh24WVWenIgKons0BOW4LH2RljUHl7XeSC3HC+3DtqHIuUa5I9JiAp0Ch
+    8xnAcJuWr0ZQJDHr8iOJCWteOr+CMKy/UTgI96xYsq36YV+Ch/swNBVfHVsZQoIj
+    jqGNh3EhZ266wZBUXrL7xfimxCvQlEGcklbew3WyIRBrWsIXm3Wf8KTz4wmYp4Cs
+    petISeEAr2Lh2Bv2SBDXPF4RCFEfgDJvszPUHAkMTp2khO22s08ohYfq8ebMx6hC
+    U3AnnbGtFqQ3PUdtWstPKoRLWp3cM6hc6rRECIpkJhzkPT9J2cmtwxLwvlKoSDZw
+    UzZFptrD9I19xNP5QGacmIJCwFIm0Wwnv1bZUKz5+JopqyAPoTeq1k9J3bq2fRIX
+    2ArTDUPqluqzlNI1PBM6+5A58arR+eSNQMfmOKfQVA6LV5kQruJrolFQIwqsnBwy
+    Hf/OlHSjYR7gCRpd6Mh+O3hgd1baq+DnQgSGbsc+5qJks9sC4c0i1JIggM09+90g
+    EMaS4C5m7YTgnHGUPDMS2iSr+lsxurrhR8h/3vU4JBMuGQysQpTpv1VpYxIFUhyq
+    fCTVBz7aLengL4DxgEqwfLoDtIrMeMZuEyblNnH9G3oEBxnvJpY83vfHweVrneS7

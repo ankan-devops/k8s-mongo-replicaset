@@ -1,0 +1,39 @@
+resources:
+  - mongodb-sc.yaml
+  - mongodb-configmap.yaml
+  - mongodb-secrets.yaml
+  - mongodb-svc.yaml
+  - mongodb-deploy.yaml
+  - hpa.yaml
+  - mongo-express/mongoexp-secrets.yaml
+  - mongo-express/mongoexp-deploy.yaml
+
+#Enter you preferred namespace
+namespace: mongo
+
+#Enter your preferred name-suffix
+nameSuffix: -develop
+
+#Enter the EFS filesystemID in the values
+patchesJson6902: |-
+- targets:
+    version: v1
+    kind: StorageClass
+    name: efs-sc
+  patch: |-
+    - op: replace
+      path: /parameters/fileSystemId
+      value: fs-errbw5xxxxxx
+
+#Enter the preferred HorizontalPodAutoscaler min and max values
+- target:
+      version: v1
+      kind: HorizontalPodAutoscaler
+      name: ashpamongodb
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3

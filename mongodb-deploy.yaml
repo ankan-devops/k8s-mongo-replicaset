@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: deploymongodb
+  namespace: mongo
+  labels:
+    app: deploymongodb
+
+spec:
+  revisionHistoryLimit: 3
+  serviceName: mongodb-svc
+  selector:
+    matchLabels:
+      app: deploymongodb
+  updateStrategy:
+    type: RollingUpdate
+  minReadySeconds: 0
+  template:
+    metadata:
+      labels:
+        app: deploymongodb
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: deploymongodb
+        image: mongo:6.0
+
+        resources:
+          limits:
+            cpu: 1024m
+          requests:
+            cpu: 600m
+
+        command:
+        - /bin/sh
+        - -c
+        - |
+          /data/mongodbinit/mongo-user.sh &
+          mongod --replSet=rs0 --bind_ip_all --auth --dbpath=/data/db --keyFile=/data/mongodbkey/mongodb.key --setParameter=authenticationMechanisms=SCRAM-SHA-1;
+
+        lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/bash
+                - -c
+                - |
+                  if [ -f /data/db/admin-user.lock ]; then
+                  if [ "$HOSTNAME" != "deploymongodb-0" ]; then
+                  mongosh deploymongodb-0.mongodb-svc:27017 -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase=admin --eval 'rs.remove("'$HOSTNAME'.mongodb-svc:27017")';
+                  rm -f /data/db/admin-user.lock; fi; fi;
+        ports:
+          - containerPort: 27017
+
+        envFrom:
+        - secretRef:
+            name: mongo-creds
+        livenessProbe:
+          exec:
+            command:
+              - bash
+              - -c
+              - |
+                if [[ "$(mongosh localhost:27017 -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase=admin --eval 'db.adminCommand({ping:1}).ok' --quiet)" == "1" ]]; then
+                exit 0;
+                else exit 1;
+                fi
+          initialDelaySeconds: 90
+          periodSeconds: 60
+          failureThreshold: 3
+          timeoutSeconds: 5
+
+        readinessProbe:
+          exec:
+            command:
+              - bash
+              - -c
+              - |
+                if [[ "$(mongosh localhost:27017 --authenticationDatabase=admin --eval 'db.adminCommand({ping:1}).ok' --quiet)" == "1" ]]; then
+                exit 0;
+                else exit 1;
+                fi
+          initialDelaySeconds: 5
+          successThreshold: 1
+          periodSeconds: 30
+          timeoutSeconds: 5
+
+        volumeMounts:
+        - name: mongodb-persistent-storage
+          mountPath: /data/db
+        - name: mongodbkey
+          mountPath: /data/mongodbkey
+        - name: mongodb-init
+          mountPath: /data/mongodbinit
+
+      volumes:
+      - name: mongodbkey
+        configMap:
+          name: mongodb-key
+          defaultMode: 0400
+      - name: mongodb-init
+        configMap:
+          name: mongodb-init
+          defaultMode: 0777
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-persistent-storage
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "efs-sc"
+    spec:
+      storageClassName: efs-sc
+      accessModes: ["ReadWriteMany"]
+      resources:
+        requests:
+          storage: 1Gi

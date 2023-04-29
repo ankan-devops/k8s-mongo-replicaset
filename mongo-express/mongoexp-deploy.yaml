@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploymongoexpress
+  namespace: mongo
+  labels:
+    app: deploymongoexpress
+spec:
+  revisionHistoryLimit: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deploymongoexpress
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: deploymongoexpress
+    spec:
+      containers:
+      - name: deploymongoexpress
+        image: mongo-express
+        ports:
+        - containerPort: 8081
+        env:
+        - name: ME_CONFIG_MONGODB_AUTH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-creds
+              key: DB_USERNAME
+        - name: ME_CONFIG_MONGODB_AUTH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-creds
+              key: DB_PASSWORD
+        - name: ME_CONFIG_MONGODB_ENABLE_ADMIN
+          value: 'false'
+        envFrom:
+        - secretRef:
+            name: mongo-exp-creds
